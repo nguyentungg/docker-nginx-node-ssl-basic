@@ -1,0 +1,51 @@
+version: "3"
+
+services:
+  node:
+    build:
+      context: ./.docker/services
+      dockerfile: ./node/Dockerfile
+    container_name: node
+    volumes:
+      - ./node:/var/www/app/node
+      - ./.docker/services/node:/var/www/app/.docker/services/node
+      # - .:/var/www/app
+    ports:
+      - "3000:3000"
+    working_dir: /var/www/app
+    # tty: true
+    command: [/bin/bash, ./.docker/services/node/command.sh]
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: ./.docker/services/
+      dockerfile: ./nginx/build/Dockerfile
+    container_name: nginx
+    command: [/bin/bash, .docker/services/nginx/build/command.sh]
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "6969:6969"
+    volumes:
+      - ./.docker/services/nginx/conf:/etc/nginx/conf.d
+      - ./.docker/services/nginx/logs:/var/www/app/.docker/services/nginx/logs
+      - ./.docker/services/nginx/certs:/var/www/app/.docker/services/nginx/certs
+      - .:/var/www/app
+    working_dir: /var/www/app # Tiến trình Node.js sẽ bắt đầu thực thi từ thư mục làm việc được chỉ định.
+    # tty: true #(teletypewriter) Dùng cho việc debug gỡ lỗi cho container. Giữ cho container luôn được bật.
+    networks:
+      - app-network
+    depends_on: 
+      - node
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge
+
+#Volumes
+volumes:
+  dbdata:
+    driver: local
